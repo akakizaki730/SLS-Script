@@ -536,9 +536,9 @@ def update_alt_text(soup):
 
     # Helper function to sanitize text for filename
     def sanitize_text(text):
-        # strip "Step X:" prefix if it exists (from H3s)
+        #strip "Step X:" prefix if it exists
         text_cleaned = re.sub(r'^Step \d+:\s*', '', text, flags=re.IGNORECASE).strip()
-        # remove commas
+        #remove commas
         text_cleaned = re.sub(r',', '', text_cleaned)
         # replace whitespace with dashes
         text_cleaned = re.sub(r'\s+', '-', text_cleaned)
@@ -549,7 +549,7 @@ def update_alt_text(soup):
         #find the most recent h2 with the class kb anchor for the section name
         prev_h2 = img.find_previous('h2', class_='kb-anchor')
 
-        #1. Determine the base key for Filename and Counting
+        #1.establish base key for keeping track of img counts
         if prev_h2:
             h2_text = prev_h2.get_text().strip()
             base_img_key = sanitize_text(h2_text)
