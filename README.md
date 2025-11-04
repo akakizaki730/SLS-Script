@@ -6,7 +6,7 @@ The script performs operations such as:
 * Standardizing image tags and `src`/`alt`/`title` attributes based on preceding step headers.
 * Converting textual warnings/tips/notes into proper `div` containers with appropriate classes.
 * Formatting "Required Tools".
-* Converting "Step X: Title" paragraphs/headers into standard `<h3>` tags.
+* Converting "Step X: " paragraphs/headers into standard `<h3>` tags. For now, the content is empty
 * Applying general clean-up (removing unnecessary attributes, empty tags, and standardizing whitespace).
 ***Note: certain PDF works better with SLA script ***
 
