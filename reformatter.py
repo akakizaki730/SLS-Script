@@ -14,6 +14,7 @@ def reformat_html(html_content):
     soup=convert_note_to_tip_div(soup)
     soup=convert_lists_to_steps(soup)
     soup=convert_step_p_to_h3(soup)
+    soup=clean_google_links(soup)
 
     soup=update_alt_text(soup)
     soup=separate_img(soup)
@@ -693,4 +694,27 @@ def separate_img(soup):
             img.extract()
             p_tags.insert_after(img)
 
+    return soup
+
+
+def clean_google_links(soup):
+    """
+    Removes Google Docs tracking/redirection wrappers from <a> tags' href attributes.
+    """
+    #use "&" for pattern matching
+    suffix_pattern = re.compile(r'&sa=D&source=editors&ust=.*?&usg=.*?$')
+
+    for a_tag in soup.find_all('a', href=True):
+        original_href = a_tag['href']
+        cleaned_href = original_href
+        
+        #remove google prefix
+        prefix = "https://www.google.com/url?q="
+        if cleaned_href.startswith(prefix):
+            cleaned_href = cleaned_href[len(prefix):]
+
+        cleaned_href = suffix_pattern.sub('', cleaned_href)
+        
+        a_tag['href'] = cleaned_href
+        
     return soup
