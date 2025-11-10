@@ -6,10 +6,24 @@ import re
 def remove_br_tags(text):
     return re.sub(r'</?br\s*/?>', '', text, flags=re.IGNORECASE)
 
+def separate_h1_img(soup):
+    #separates img elements that are nested within a h1 tag
+    for h1_tag in list(soup.find_all('h1')):
+        images=h1_tag.find_all('img')
+
+        for img in reversed(images):
+            extracted_img=img.extract()
+
+            #put the image right after the h1 tag
+            h1_tag.insert_after(extracted_img)
+        
+    return soup
+
 def clean_html(html_content):
     soup = BeautifulSoup(html_content, 'html.parser')
-
+    #run this first
     html_content=remove_br_tags(html_content)
+
     for br_tag in soup.find_all('br'):
         br_tag.decompose()
 
@@ -122,6 +136,8 @@ def clean_html(html_content):
         soup.body.unwrap()
     if soup.html:
         soup.html.unwrap()
+
+    soup=separate_h1_img(soup)
 
     #make new divs
     new_div = soup.new_tag("div", **{'class': 'article-body'})
