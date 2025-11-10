@@ -8,7 +8,7 @@ def save_html(output_filename, content):
     print(f"file saved to '{output_filename}'")
 
 # def main():
-#     input_file = "FUSE1GENERATIONREPLACINGTHEUPPERLASERWINDOW.html"
+#     input_file = "FUSE1REPLACINGTHEGALVOS.html"
     
 #     try:
 #         with open(input_file, 'r', encoding='utf-8') as f:
@@ -26,7 +26,7 @@ def save_html(output_filename, content):
 #         # output_file = f"formatted_{filename}{extension}"
 #         output_file = f"test1_{filename}{extension}"
 #         save_html(output_file, reformatted_content)
-#         #save_html(output_file, cleaned_content)
+#         save_html(output_file, cleaned_content)
         
 #     except FileNotFoundError:
 #         print(f"Error: file was not found")

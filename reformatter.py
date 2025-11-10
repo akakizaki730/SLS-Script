@@ -1,6 +1,7 @@
 from bs4 import BeautifulSoup, NavigableString, Tag
 import re
 import os
+import shutil
 
 def reformat_html(html_content):
     soup=BeautifulSoup(html_content, 'html.parser')
@@ -453,159 +454,108 @@ def convert_step_p_to_h3(soup):
     return soup
 
 
-# def update_alt_text(soup):
-#     images = soup.find_all('img')
-    
-#     # container to keep count of img. Key will be the sanitized H2/Section text.
-#     image_section_counts = {}
 
-#     # Helper function to sanitize text for filename
-#     def sanitize_text(text):
-#         # strip "Step X:" prefix if it exists (from H3s)
-#         text_cleaned = re.sub(r'^Step \d+:\s*', '', text, flags=re.IGNORECASE).strip()
-#         # remove commas
-#         text_cleaned = re.sub(r',', '', text_cleaned)
-#         # replace whitespace with dashes
-#         text_cleaned = re.sub(r'\s+', '-', text_cleaned)
-#         return text_cleaned.lower()
-
-#     for img in images:
-#         prev_h3 = img.find_previous('h3')
-#         # Find the most recent h2 with the class 'kb-anchor' for the section name
-#         prev_h2 = img.find_previous('h2', class_='kb-anchor')
-
-#         # 1. Determine the base key for Filename and Counting
-#         # The key for counting/filename is still based on H2 (or H3 fallback) to ensure continuity
-#         if prev_h2:
-#             # Use H2 text for the file grouping/counting key
-#             h2_text = prev_h2.get_text().strip()
-#             base_img_key = sanitize_text(h2_text)
-#         elif prev_h3:
-#             # Fallback to H3 text if no H2 is found
-#             h3_text = prev_h3.get_text().strip()
-#             base_img_key = sanitize_text(h3_text)
-#         else:
-#             # Default key for images outside structured content
-#             base_img_key = "general-content"
-
-#         # 2. Update and get the current sequential number for this section key
-#         if base_img_key not in image_section_counts:
-#             image_section_counts[base_img_key] = 1
-#         else:
-#             image_section_counts[base_img_key] += 1
-#         current_img_number = image_section_counts[base_img_key]
-
-#         # 3. Construct the final filename: [Section-Name]-[Count]
-#         # The image filename is now sequential within the scope of the H2 (base_img_key)
-#         final_filename = f"{base_img_key}-{current_img_number}"
-
-#         # 4. Set Alt/Title text (UPDATED to use raw H2 text if available)
-#         if prev_h2:
-#             # Use the raw H2 text for the alt/title
-#             alt_title_text = prev_h2.get_text().strip()
-#         elif prev_h3:
-#             # Fallback to raw H3 text if no H2 is found
-#             alt_title_text = prev_h3.get_text().strip()
-#         else:
-#             # Final fallback (should rarely happen in structured docs)
-#             alt_title_text = "General Content Image"
-
-
-#         # 5. Update image attributes
-#         original_src = img.get('src', '')
-#         # reads the current file path
-#         src_parts_match = re.match(r'^(.*[/])?(.*)(\.[a-zA-Z0-9]+)$', original_src)
-        
-#         # defaults file to png if extension is not present
-#         path_prefix = src_parts_match.group(1) if src_parts_match and src_parts_match.group(1) else ''
-#         extension = src_parts_match.group(3) if src_parts_match and src_parts_match.group(3) else '.png'
-        
-#         # makes new src file path
-#         new_src_value = f"{path_prefix}{final_filename}{extension}"
-        
-#         img['src'] = new_src_value
-#         img['alt'] = alt_title_text
-#         img['title'] = alt_title_text
-           
-#     return soup
 
 def update_alt_text(soup):
     images = soup.find_all('img')
     
-    # container to keep count of img. Key will be the sanitized H2/Section text.
+    #container to keep track of the count of img 
     image_section_counts = {}
+    
+    #dictionary to track of which physical files have been processed 
+    #key: original_filename_full ('image-001.png')
+    #value:new filenames it has been renamed/copied 
+    processed_files = {}
 
-    # Helper function to sanitize text for filename
+    #helper function to clean file name
     def sanitize_text(text):
-        #strip "Step X:" prefix if it exists
+        #remove "step x:", commas, spaces
         text_cleaned = re.sub(r'^Step \d+:\s*', '', text, flags=re.IGNORECASE).strip()
-        #remove commas
-        text_cleaned = re.sub(r',', '', text_cleaned)
-        # replace whitespace with dashes
+        text_cleaned = re.sub(r'[,:]', '', text_cleaned)
         text_cleaned = re.sub(r'\s+', '-', text_cleaned)
         return text_cleaned.lower()
 
     for img in images:
         prev_h3 = img.find_previous('h3')
-        #find the most recent h2 with the class kb anchor for the section name
+        #find the most recent h2 anchor 
         prev_h2 = img.find_previous('h2', class_='kb-anchor')
 
-        #1.establish base key for keeping track of img counts
+        #1.establish base key for counting & filename base
         if prev_h2:
             h2_text = prev_h2.get_text().strip()
             base_img_key = sanitize_text(h2_text)
+            alt_title_text = h2_text
         elif prev_h3:
             h3_text = prev_h3.get_text().strip()
             base_img_key = sanitize_text(h3_text)
+            alt_title_text = h3_text
         else:
             base_img_key = "general-content"
+            alt_title_text = "General Content Image"
 
-        #2. update and get the current sequential number for this section key
+        #2.update and get the current sequential number for this section key
         if base_img_key not in image_section_counts:
             image_section_counts[base_img_key] = 1
         else:
             image_section_counts[base_img_key] += 1
         current_img_number = image_section_counts[base_img_key]
 
-        # 3.make the final file name
+        # 3. make file base name
         final_filename_base = f"{base_img_key}-{current_img_number}"
 
-        # 4.set Alt/Title text
-        if prev_h2:
-            alt_title_text = prev_h2.get_text().strip()
-        elif prev_h3:
-            alt_title_text = prev_h3.get_text().strip()
-        else:
-            alt_title_text = "General Content Image"
-
-        # 5 update img attribute
+        #4. get file path components
         original_src = img.get('src', '')
-        
         src_parts_match = re.match(r'^(.*[/])?(.*)(\.[a-zA-Z0-9]+)$', original_src)
         
-        path_prefix = src_parts_match.group(1) if src_parts_match and src_parts_match.group(1) else ''
-        extension = src_parts_match.group(3).lower() if src_parts_match and src_parts_match.group(3) else '.png'
-        
-        #get the full old file path
-        old_filename_full = src_parts_match.group(2) + src_parts_match.group(3) if src_parts_match else original_src
-        
-        #define the new filepath
-        new_filename = f"{final_filename_base}{extension}"
-        
-        # makes new src file path (for HTML)
-        new_src_value = f"{path_prefix}{new_filename}"
+        if not src_parts_match:
+            continue 
 
-        #actual file renaming
-        old_filepath = os.path.join(os.getcwd(), old_filename_full)
-        new_filepath = os.path.join(os.getcwd(), new_filename)
+        path_prefix = src_parts_match.group(1) if src_parts_match.group(1) else ''
+        extension = src_parts_match.group(3).lower()
         
-        #renaming operation
-        if os.path.exists(old_filepath) and old_filename_full != new_filename:
+        #original_filename_full= actual file name part without the path prefix
+        original_filename_full = src_parts_match.group(2) + src_parts_match.group(3)
+        
+        #define new file name for the physical files
+        new_filename_full = f"{final_filename_base}{extension}"
+        
+        #5. handle physical file renaming/copying logic
+        
+        #initialize set for original files if needed
+        if original_filename_full not in processed_files:
+            processed_files[original_filename_full] = set()
+            
+        #check whether the new file name is created yet for this original file
+        if new_filename_full not in processed_files[original_filename_full]:
+            
+            old_filepath = os.path.join(os.getcwd(), original_filename_full)
+            new_filepath = os.path.join(os.getcwd(), new_filename_full)
+            
             try:
-                os.rename(old_filepath, new_filepath)
-            except Exception as e:
-                print(f"Error renaming physical file {old_filename_full}: {e}")
+                if not processed_files[original_filename_full]:
+                    #if this is the absolute first time the original file is encountered --> rename
+                    if os.path.exists(old_filepath):
+                        os.rename(old_filepath, new_filepath)
+                        processed_files[original_filename_full].add(new_filename_full)
+                    else:
+                        #file dne
+                        processed_files[original_filename_full].add(new_filename_full)
 
+                else:
+                    #reuse case: COPY from the first renamed file
+                    #the first renamed file is the source for all subsequent copies
+                    source_filename = next(iter(processed_files[original_filename_full]))
+                    source_filepath = os.path.join(os.getcwd(), source_filename)
+                    
+                    if os.path.exists(source_filepath):
+                        #copy the content of the first renamed file to the new filename
+                        shutil.copy2(source_filepath, new_filepath)
+                        processed_files[original_filename_full].add(new_filename_full)
+                    
+            except Exception as e:
+                print("error")                
+        #6. update html attributes
+        new_src_value = f"{path_prefix}{new_filename_full}"
         img['src'] = new_src_value
         img['alt'] = alt_title_text
         img['title'] = alt_title_text
